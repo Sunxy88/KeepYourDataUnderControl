@@ -1,5 +1,4 @@
 'use strict';
-
 $("form").click((event) => {
     event.preventDefault(); //this works for links
     let element = event.target.parentElement;
@@ -55,7 +54,7 @@ async function parseForm(form_html, form_data) {
         // We specify the parameters for the ajax request to the self storage
         let settings = {
             // This url need to be changed to your own self storage
-            "url": "",
+            "url": "http://localhost:5001/",
             "method": "POST",
             "timeout": 0,
             "processData": false,
@@ -76,10 +75,10 @@ async function parseForm(form_html, form_data) {
                 await qrCode.encode();
                 data = await qrCode.getImage();
             }
-
             // We set the form data with the new value generated
             form_data.set(inputName, data);
         });
+
     });
 }
 

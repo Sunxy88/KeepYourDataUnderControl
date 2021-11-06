@@ -20,7 +20,7 @@
     }
   ],
 
-  "web_accessible_resources": [
+  "web_accessible_resources": [ 
     "jquery-3.5.1.min.js",
     "QrCode.js"
   ],

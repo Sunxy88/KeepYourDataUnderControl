@@ -18,6 +18,11 @@ from models import (
 
 api = Blueprint('api', __name__, url_prefix="")
 
+
+@api.route('/')
+def home():
+    return "You are in my home page"
+
 @api.route('/<filename>')
 def serve_file(filename):
     if filename == 'favicon.ico':
