@@ -16,7 +16,9 @@ from flask import (
 )
 from flask_cors import CORS
 from pymongo import MongoClient
+import pymongo
 from werkzeug.utils import secure_filename
+import ssl
 
 load_dotenv()
 
@@ -25,7 +27,13 @@ CORS(app)
 app.config['UPLOAD_FOLDER'] = os.environ.get("API_UPLOAD_FOLDER", "./")
 
 def get_files_collection():
-    client = MongoClient(host=os.environ.get("MONGO_URL"))
+    try:
+        client = MongoClient(os.environ.get("MONGO_URL"),ssl_cert_reqs=ssl.CERT_NONE)
+        client.server_info()
+
+    except pymongo.errors.ServerSelectionTimeoutError as err:
+        return "COULD NOT CONNECT"
+
     return client[os.environ.get("MONGO_DB_NAME")][os.environ.get("MONGO_FILES_COLLECTION_NAME")]
 
 def save_file_and_get_key(filename):
@@ -41,19 +49,28 @@ def get_file_path(key):
     file_found = files_collection.find_one({"_id": ObjectId(key)})
     return file_found.get("link") if file_found else None
 
+@app.route('/', methods=['GET'])
+def homePage():
+    return "Lucky You! This is da home page"
 
 @app.route('/', methods=['POST'])
 def upload_file():
     # Taken from: https://flask.palletsprojects.com/en/1.1.x/patterns/fileuploads/
+
     if 'file' not in request.files:
         abort(Response("Missing file", 400))
-
+    
     file = request.files['file']
     if file.filename == '':
         abort(Response("Empty filename", 400))
 
     filename = secure_filename(file.filename)
-    if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], filename)):
+
+    return save_file_and_get_key(filename)
+
+    return os.environ.get("BASE_URL")+"/"+str(key)
+
+    if os.path.isfile(app.config['UPLOAD_FOLDER']+"/"+filename):
         extension = ""
         if filename.find(".") != -1:
             # At least one dot means we have an extension
@@ -62,10 +79,10 @@ def upload_file():
             filename = '.'.join(values[:-1])
             extension = "." + values[-1]
         filename = filename + "_" + str(uuid.uuid4()) + extension
-
-    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+    file.save(app.config['UPLOAD_FOLDER']+"/"+filename)
+    
     key = save_file_and_get_key(filename)
-    return jsonify(url=os.path.join(os.environ.get("BASE_URL") ,key))
+    return jsonify(url=os.environ.get("BASE_URL")+"/"+key)
 
 
 @app.route('/<key>')
@@ -108,4 +125,4 @@ def debug_delete(key):
     return redirect(os.path.join(os.environ.get("BASE_URL"), url_for('debug_main')))
 
 if __name__ == '__main__':
-   app.run()
+   app.run(port=int(os.environ.get('FLASK_PORT', 5000)))

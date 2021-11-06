@@ -2,7 +2,7 @@ class QrCode {
     image;
     constructor(link, qrCodeLink) {
         this.link = link;
-        this.qrCodeLink = qrCodeLink;
+        this.qrCodeLink = qrCodeLink.replace(/\\/, "/");
     }
 
     async encode() {
@@ -11,10 +11,14 @@ class QrCode {
             await jQuery.ajax({
                 url: `http://api.qrserver.com/v1/create-qr-code/?data=${this.link}&size=100x100`,
                 cache: false,
+                dataType: 'jsonp',
                 xhr: await function(){// Seems like the only way to get access to the xhr object
                     let xhr = new XMLHttpRequest();
                     xhr.responseType= 'blob'
                     return xhr;
+                },
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
                 },
                 success: await function(data){
                     return data;
