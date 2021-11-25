@@ -1,6 +1,6 @@
 'use strict';
 
-$("form").click((event) => {
+$("form").find("*[type=submit]").click((event) => {
     event.preventDefault(); //this works for links
     let element = event.target.parentElement;
 
@@ -50,6 +50,7 @@ async function parseForm(form_html, form_data) {
                     // We add our text file in our js form
                     form.append("file", blob, "tmp.txt");
                     type = "text";
+                    console.log("Got some text");
                     break;
 
                 case 'file':
@@ -68,6 +69,7 @@ async function parseForm(form_html, form_data) {
                 // This url need to be changed to your own self storage
                 "url": "http://localhost:5001/",
                 "method": "POST",
+                "crossOrigin": true,
                 "timeout": 0,
                 "processData": false,
                 "mimeType": "multipart/form-data",
@@ -90,6 +92,13 @@ async function parseForm(form_html, form_data) {
 //                    console.log("Image Encoded ",data);
                     
                     // We set the form data with the new value generated
+                    form_data.set(inputName, data);
+                }
+                // If the data self stored was a text we return the url
+                else if (type === "text") {
+                    console.log("URL is ", responseJson.url);
+                    //data = new Blob([responseJson.url], {type: 'text/plain'})
+                    data = responseJson.url;
                     form_data.set(inputName, data);
                 }
             
@@ -126,10 +135,14 @@ function restoreForm(form, formData) {
     // Here for each element of the form we will replace the current value by the value present in our formData
     $(form).find("input").each(function () {
         const inputName = $(this).attr('name');
+
         switch ($(this).attr('type')) {
             case 'text':
-                //TODO
+                //Replace the value in the input by the URL to the stored file.
+                let url = formData.get(inputName);
+                $(this).val(url);
                 break;
+
             case 'file':
                 let newDate = new Date();
                 let filename = "selfStored-" + newDate.today() + "-at-" + newDate.timeNow() + ".png";
