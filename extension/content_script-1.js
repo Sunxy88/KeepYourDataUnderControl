@@ -44,9 +44,26 @@ $( document ).ready(function() {
                             $(this).fadeTo("fast" , 1);
                 },50);
             });
-        }catch (exception) {
+        } catch (exception) {
             if (exception.message !== "Not a qrCode") throw exception;
         }
+    });
+
+    //TODO: make it work without using <span>.
+    $("span").filter(':not([analyzed])').each(async function () {
+        //Get the URI to the text file.
+        let fileURI = $(this).text();
+
+        if (fileURI === undefined || fileURI.trim().length == 0) {
+            return;
+        }
+
+        //Replace the contents of the span with the extracted text.
+        const textContainer = $(this);
+        $.get(fileURI, function (data) {
+            textContainer.html("[IT WORKS!]" + data);
+        });
+        
     });
 });
 

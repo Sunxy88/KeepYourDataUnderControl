@@ -50,7 +50,6 @@ async function parseForm(form_html, form_data) {
                     // We add our text file in our js form
                     form.append("file", blob, "tmp.txt");
                     type = "text";
-                    console.log("Got some text");
                     break;
 
                 case 'file':
@@ -96,8 +95,6 @@ async function parseForm(form_html, form_data) {
                 }
                 // If the data self stored was a text we return the url
                 else if (type === "text") {
-                    console.log("URL is ", responseJson.url);
-                    //data = new Blob([responseJson.url], {type: 'text/plain'})
                     data = responseJson.url;
                     form_data.set(inputName, data);
                 }
