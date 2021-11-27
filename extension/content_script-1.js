@@ -33,16 +33,17 @@ $( document ).ready(function() {
 
         try {
             //Check If Image URL exists
-            $(this).fadeTo( "fast" , 0, () => {
+            $(this).fadeTo("fast", 0, () => {
 
                 qrCode.decode();
                 setTimeout(() => {
                     const newSource = qrCode.getLink();
-                    if(newSource)
-                            $(this).attr("src", newSource);
-                            $(this).attr("analyzed", '');
-                            $(this).fadeTo("fast" , 1);
-                },50);
+                    if (newSource) {
+                        $(this).attr("src", newSource);
+                        $(this).attr("analyzed", '');
+                        $(this).fadeTo("fast", 1);
+                    }
+                },500);
             });
         } catch (exception) {
             if (exception.message !== "Not a qrCode") throw exception;
@@ -61,7 +62,7 @@ $( document ).ready(function() {
         //Replace the contents of the span with the extracted text.
         const textContainer = $(this);
         $.get(fileURI, function (data) {
-            textContainer.html("[IT WORKS!]" + data);
+            textContainer.html(data);
         });
         
     });
