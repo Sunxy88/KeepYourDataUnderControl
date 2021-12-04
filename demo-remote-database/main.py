@@ -6,7 +6,7 @@ from views import api
 def create_app() :
 
     app = Flask(__name__)
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://admin:imtatlantique@keepcontroldatadb.czttphb9eqym.us-east-2.rds.amazonaws.com/control_data?ssl_ca=us-east-2-bundle.cer'
+    app.config['SQLALCHEMY_DATABASE_URI'] = ''
     db.init_app(app)
     app.register_blueprint(api)
 
