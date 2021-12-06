@@ -65,11 +65,6 @@ def upload_file():
         abort(Response("Empty filename", 400))
 
     filename = secure_filename(file.filename)
-
-    return save_file_and_get_key(filename)
-
-    return os.environ.get("BASE_URL")+"/"+str(key)
-
     if os.path.isfile(app.config['UPLOAD_FOLDER']+"/"+filename):
         extension = ""
         if filename.find(".") != -1:
@@ -82,7 +77,8 @@ def upload_file():
     file.save(app.config['UPLOAD_FOLDER']+"/"+filename)
     
     key = save_file_and_get_key(filename)
-    return jsonify(url=os.environ.get("BASE_URL")+"/"+key)
+    finalUrl = os.environ.get("BASE_URL")+"/"+key
+    return jsonify(url=finalUrl)
 
 
 @app.route('/<key>')
@@ -118,6 +114,7 @@ def debug_delete_all():
 def debug_delete(key):
     files_collection = get_files_collection()
     filename = get_file_path(key)
+    console.log("FileName ",filename)
     if not filename:
         abort(404)
     files_collection.delete_one({"_id": ObjectId(key)})
@@ -125,4 +122,4 @@ def debug_delete(key):
     return redirect(os.path.join(os.environ.get("BASE_URL"), url_for('debug_main')))
 
 if __name__ == '__main__':
-   app.run(port=int(os.environ.get('FLASK_PORT', 5000)))
+   app.run(port=int(os.environ.get('FLASK_PORT', 5001)))

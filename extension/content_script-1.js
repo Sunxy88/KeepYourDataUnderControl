@@ -1,5 +1,6 @@
 $( document ).ready(function() {
 
+    var qrcode = {};
     $("e-img").each(function() {
         const source = $(this).attr("src");
 
@@ -25,20 +26,45 @@ $( document ).ready(function() {
             });
     });
 
-    $("img").filter(':not([analyzed])').each(function() {
+    $("img").filter(':not([analyzed])').each(async function() {
         const source = $(this).attr("src");
 
         let qrCode = new QrCode(undefined, source);
 
         try {
-            qrCode.decode();
-            const newSource = qrCode.getLink();
-            $(this).attr("src", newSource);
-            $(this).attr("analyzed", '');
-        }
-        catch (exception) {
+            //Check If Image URL exists
+            $(this).fadeTo("fast", 0, () => {
+
+                qrCode.decode();
+                setTimeout(() => {
+                    const newSource = qrCode.getLink();
+                    if (newSource) {
+                        $(this).attr("src", newSource);
+                        $(this).attr("analyzed", '');
+                        $(this).fadeTo("fast", 1);
+                    }
+                },500);
+            });
+        } catch (exception) {
             if (exception.message !== "Not a qrCode") throw exception;
         }
+    });
+
+    //TODO: make it work without using <span>.
+    $("span").filter(':not([analyzed])').each(async function () {
+        //Get the URI to the text file.
+        let fileURI = $(this).text();
+
+        if (fileURI === undefined || fileURI.trim().length == 0) {
+            return;
+        }
+
+        //Replace the contents of the span with the extracted text.
+        const textContainer = $(this);
+        $.get(fileURI, function (data) {
+            textContainer.html(data);
+        });
+        
     });
 });
 

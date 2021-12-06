@@ -26,7 +26,6 @@ def home():
 def post_add():
     uploaded_file = request.files['file']
     files = {'file': (uploaded_file.filename, uploaded_file)}
-
     req = requests.post(API_ENDPOINT+"/posts", files=files)
     if req.status_code == requests.codes.ok:
         return redirect(url_for('views.home'), code=302)
