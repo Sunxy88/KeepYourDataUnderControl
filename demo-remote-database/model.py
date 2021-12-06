@@ -13,12 +13,10 @@ class SerializableModelMixin:
     def to_dict(self):
         return {key: value for key, value in self.__dict__.items() if isinstance(value, (int, str))}
 
-
-# test class
-class Student(db.Model, SerializableModelMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String())
-
 class TextResource(db.Model, SerializableModelMixin):
     id = db.Column(db.Integer, primary_key=True)
     resource = db.Column(db.String())
+
+class ImageResource(db.Model, SerializableModelMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    resource = db.Column(db.LargeBinary(length=(2**32)-1))

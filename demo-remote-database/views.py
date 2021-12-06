@@ -1,3 +1,5 @@
+import os
+import os.path
 from datetime import datetime
 
 from flask import (
@@ -7,61 +9,92 @@ from flask import (
     request,
     Response,
 )
+from werkzeug.utils import secure_filename
 
-from model import Student, db, TextResource
+from model import db, TextResource, ImageResource
+from config import BASE_HOST, UPLOAD_FOLDER
 
 api = Blueprint('api', __name__, url_prefix="")
 
 
-@api.route('/')
+@api.route('/', methods=['GET'])
 def index():
     return "hello,world"
 
+@api.route('/', methods=['POST'])
+def upload_resource():
+    if 'file' not in request.files:
+        abort(Response("Missing file", 400))
+    
+    file = request.files['file']
+    if file.filename == '':
+        abort(Response("Empty filename", 400))
+
+    filename = secure_filename(file.filename)
+    # temporarily save file
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+    file.save(file_path)
+    extension = os.path.splitext(filename)[-1]
+    print(extension)
+    if extension == '.txt':
+        with open(file_path, 'UTF-8') as file:
+            text = file.read()
+            res = save_text(text)
+            if res != -1:
+                res = BASE_HOST + "/text/" + str(res)
+                return jsonify(res)
+            else:
+                return ""
+    if extension == '.jpg':
+        with open(file_path, 'rb') as file:
+            img = file.read()
+            res = save_image(img)
+            if res != -1:
+                res = BASE_HOST + "/image/" + str(res)
+                return jsonify(res)
+            else:
+                return ""
+    return ""
+
+@api.route('/image/<int:id>', methods=['GET'])
+def get_image(id):
+    image = ImageResource.query.get(id)
+    resp = Response(image.resource, mimetype="image/jpeg")
+    return resp
+
 @api.route('/text/<int:id>', methods=['GET'])
-def getText(id):
+def get_text(id):
     text = TextResource.query.get(id)
     print(text.to_dict())
 
     return jsonify(text.resource)
 
 @api.route('/text', methods=['POST'])
-def createText(): 
+def create_text(): 
     res = -1
 
     if request.content_type.startswith("application/json"):
         content = request.json
         text = content.get('text')
-        textResource = TextResource(resource=text)
-        db.session.add(textResource)
-        db.session.commit()
-        db.session.refresh(textResource)
-        res = textResource.id
+        res = save_text(text)
 
     if res != -1:
-        res = "http://127.0.0.1:12345/text/" + str(res)
+        res = BASE_HOST + "/text/" + str(res)
         return jsonify(res)
     else:
         return ""
 
-@api.route('/student/<int:id>', methods=['GET'])
-def testGet(id):
-    students = Student.query.get(id)
-    print(students.to_dict())
+def save_text(text):
+    text_resource = TextResource(resource=text)
+    db.session.add(text_resource)
+    db.session.commit()
+    db.session.refresh(text_resource)
+    res = text_resource.id
+    return res
 
-    return jsonify(students.to_dict())
-
-@api.route('/student', methods=['POST'])
-def testPost(): 
-    res = -1
-
-    if request.content_type.startswith("application/json"):
-        content = request.json
-        id = content.get('id')
-        name = content.get('name')
-        student = Student(id=id, name=name)
-        db.session.add(student)
-        db.session.commit()
-        db.session.refresh(student)
-        res = student.id
-
-    return jsonify(res)
+def save_image(image):
+    image_resource = ImageResource(resource=image)
+    db.session.add(image_resource)
+    db.session.commit()
+    db.session.refresh(image_resource)
+    return image_resource.id
