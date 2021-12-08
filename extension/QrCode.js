@@ -1,38 +1,82 @@
 class QrCode {
-    image;
+
     constructor(link, qrCodeLink) {
+        this.image = null;
         this.link = link;
         this.qrCodeLink = qrCodeLink.replace(/\\/, "/");
     }
+    
+    b64toBlob(b64Data, contentType='', sliceSize=512){
+        const byteCharacters = atob(b64Data);
+        const byteArrays = [];
+      
+        for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+          const slice = byteCharacters.slice(offset, offset + sliceSize);
+      
+          const byteNumbers = new Array(slice.length);
+          for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+          }
+      
+          const byteArray = new Uint8Array(byteNumbers);
+          byteArrays.push(byteArray);
+        }
+      
+        const blob = new Blob(byteArrays, {type: contentType});
+        return blob;
+    }
 
-    async encode() {
+
+    convertDataURIToBinary(dataURI) {
+            var BASE64_MARKER = ';base64,';
+            var base64Index = dataURI.indexOf(BASE64_MARKER) + BASE64_MARKER.length;
+            var base64 = dataURI.substring(base64Index);
+            var raw = window.atob(base64);
+            var rawLength = raw.length;
+            var array = new Uint8Array(new ArrayBuffer(rawLength));
+
+            for(let i = 0; i < rawLength; i++) {
+                array[i] = raw.charCodeAt(i);
+            }
+            return array;
+    }
+
+
+    encode(){
         //TODO replace the following encoding algorithm by using a js library
         if (this.link !== undefined) {
-            await jQuery.ajax({
-                url: `http://api.qrserver.com/v1/create-qr-code/?data=${this.link}&size=100x100`,
-                cache: false,
-                dataType: 'jsonp',
-                xhr: await function(){// Seems like the only way to get access to the xhr object
-                    let xhr = new XMLHttpRequest();
-                    xhr.responseType= 'blob'
-                    return xhr;
-                },
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                },
-                success: await function(data){
-                    return data;
-                },
-                error: function(){
+            console.log("YOUR ENCODING DATA ",this.link);
+            let qr = QRCode.generatePNG(this.link, {
+                ecclevel: "M",
+                format: "html",
+                fillcolor: "#CCCCCC",
+                textcolor: "#006F94",
+                margin: 4,
+                modulesize: 8
+            });
 
-                }
-            })
-                .then(blobQr => {
-                    this.image = blobQr;
-                });
+            let base64Data =  qr.split(",")[1];
+            this.image = this.b64toBlob(base64Data,'image/png');
+
+            /*
+            let blobQr1 = new QRCode("qrCode", {
+                text:this.link,
+                width: 128,
+                height: 128,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            console.log("MY BLOB QR",document.querySelector("#qrCode img"));
+            let self = this;
+            setTimeout(() => {
+                let base64Data = document.querySelector("#qrCode img").getAttribute("src").split(",")[1];
+                this.image = self.b64toBlob(base64Data,'image/png');
+            }, 100); */        
         }
-        else {throw new Error("link not defined")}
     }
+
 
     getImage() {
         if (this.image !== undefined) {
@@ -41,42 +85,27 @@ class QrCode {
         else {throw new Error("Image not defined")}
     }
 
-    decode() {
-        //TODO replace the following decoding algorithm by using a js library
-        if (this.qrCodeLink !== undefined) {
-            const url = `https://api.qrserver.com/v1/read-qr-code/?fileurl=${this.qrCodeLink}`;
-
-            const settings = {
-                "url": url,
-                "method": "GET",
-                "timeout": 0,
-                "processData": false,
-                "mimeType": "multipart/form-data",
-                "contentType": false,
-                "async": false
-            };
-
-            let imageLink;
-
-            $.ajax(settings).done( function (response) {
-                const responseJson = JSON.parse(response);
-                const data = responseJson[0];
-                const symbol = data["symbol"][0]
-
-                if (symbol.error === null) {
-                    imageLink = symbol.data;
-                }
-                else throw new Error("Not a qrCode");
-            });
-
-            this.link = imageLink;
-        }
-        else {throw new Error("QR code Link not defined")}
+    decodeQrCode(dataUri, cb) {
+        qrcode.callback = cb;
+        qrcode.decode(dataUri);
     }
 
+    decode() {
+        //TODO replace the following decoding algorithm by using a js library
+        
+        toDataURL(this.qrCodeLink,(item)=>{
+            //console.log("Here is your item",item);
+            this.decodeQrCode(item, (imageLink) => {
+                this.link = imageLink;
+              });
+        })
+    }
+    
     getLink() {
         return this.link;
     }
+
+
 }
 
 async function toDataURL(url, callback) {

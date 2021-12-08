@@ -1,88 +1,108 @@
 'use strict';
-$("form").click((event) => {
+
+$("form").find("*[type=submit]").click((event) => {
     event.preventDefault(); //this works for links
     let element = event.target.parentElement;
 
     while (!(element.nodeName === 'FORM')) {
         element = element.parentElement;
     }
-
     processForm(element);
 });
 
-function processForm(html_form) {
-    let form_data = new FormData(html_form);
+var filesToSend = [];
 
-    $.when(parseForm(html_form, form_data)).done(async function (){
-            await restoreForm(html_form, form_data);
+async function processForm(html_form) {
+    let form_data = new FormData();
+    await parseForm(html_form,form_data);
+    restoreForm(html_form, form_data);
+    html_form.submit();
 
-            html_form.submit();
-            //$("form")[0].requestSubmit(); // https://developer.mozilla.org/en-US/docs/Web/API/HTMLFormElement/submit
-        }
-    )
+
+   // parseForm(html_form, form_data);
+   // restoreForm(html_form, form_data);
+
+    // To Enhance
+    /*let form = new FormData();
+    filesToSend.forEach(item=>{
+        form.append("file", item, "tmp.jpg");
+        fetch("http://localhost:5001", {
+            method: 'POST',
+            body:  form
+        })
+    })*/
+
+    //html_form.submit();
 }
 
 async function parseForm(form_html, form_data) {
     // For each input of the form
-    
-    await $(form_html).find("input").each(await async function () {
-        // We create a new js form
-        let form = new FormData();
+        $(form_html).find("input").each(async function () {
+            // We create a new js form
+            let form = new FormData();
+            let type;
 
-        let type;
+            // Our following actions depend of the input type
+            switch ($(this).attr('type')) {
+                case 'text':
+                    // We convert our text as a file
+                    let blob = new Blob([this.value], {type: "text/plain;charset=utf-8"});
+                    // We add our text file in our js form
+                    form.append("file", blob, "tmp.txt");
+                    type = "text";
+                    break;
 
-        // Our following actions depend of the input type
-        switch ($(this).attr('type')) {
-            case 'text':
-                // We convert our text as a file
-                let blob = new Blob([this.value], {type: "text/plain;charset=utf-8"});
-                // We add our text file in our js form
-                form.append("file", blob, "tmp.txt");
-                type = "text";
-                break;
-            case 'file':
-                // We add the file in our js form with the correct name for the API. File name will always be tmp
-                form.append("file", this.files[0], "tmp.jpg");
-                type = "image";
-                break;
-            default:
-                throw 'Input type is not supported'
-        }
+                case 'file':
+                    // We add the file in our js form with the correct name for the API. File name will always be tmp
+                    form.append("file", this.files[0], "tmp.jpg");
+                    filesToSend.push(this.files[0]);
+                    type = "image";
+                    break;
 
-        const inputName = $(this).attr('name');
-
-        // We specify the parameters for the ajax request to the self storage
-        let settings = {
-            // This url need to be changed to your own self storage
-            "url": "http://localhost:5001/",
-            "method": "POST",
-            "timeout": 0,
-            "processData": false,
-            "mimeType": "multipart/form-data",
-            "contentType": false,
-            "data": form,
-            "async": false
-        };
-
-        await $.ajax(settings).done(await async function (response) {
-            const responseJson = JSON.parse(response);
-
-            let data;
-            // If the data self stored was an image we call the QrCode class to generate a qrcode
-            // with the link to the ressource
-            if (type === "image") {
-                console.log("We Have An Image");
-                let qrCode = new QrCode(responseJson.url);
-                await qrCode.encode();
-                data = await qrCode.getImage();
+                default:
+                    throw 'Input type is not supported'
             }
-            // We set the form data with the new value generated
-            form_data.set(inputName, data);
+
+            const inputName = $(this).attr('name');
+            let settings = {
+                // This url need to be changed to your own self storage
+                "url": "http://localhost:5001/",
+                "method": "POST",
+                "crossOrigin": true,
+                "timeout": 0,
+                "processData": false,
+                "mimeType": "multipart/form-data",
+                "contentType": false,
+                "data": form,
+                "async":false
+            };
+
+            await $.ajax(settings).done(await async function (response) {
+                const responseJson = JSON.parse(response);
+                console.log("Response ",responseJson);
+
+                let data;
+                // If the data self stored was an image we call the QrCode class to generate a qrcode
+                // with the link to the ressource
+                if (type === "image") {
+                    let qrCode = new QrCode(responseJson.url);
+                    qrCode.encode();
+                    data = qrCode.getImage();
+//                    console.log("Image Encoded ",data);
+                    
+                    // We set the form data with the new value generated
+                    form_data.set(inputName, data);
+                }
+                // If the data self stored was a text we return the url
+                else if (type === "text") {
+                    data = responseJson.url;
+                    form_data.set(inputName, data);
+                }
+            
+            });
         });
 
-        console.log("Input File Name ",inputName);
-
-    });
+        console.log("FINISHED");
 }
 
 // This function will create a new fileList from an array of file
@@ -102,6 +122,12 @@ Date.prototype.timeNow = function () {
     return ((this.getHours() < 10)?"0":"") + this.getHours() +"_"+ ((this.getMinutes() < 10)?"0":"") + this.getMinutes() +"_"+ ((this.getSeconds() < 10)?"0":"") + this.getSeconds();
 }
 
+async function dataUrlToFile(dataUrl, fileName, mimeType) {
+    const res = await axios(dataUrl);
+    const blob = res.data;
+    return new File([blob], fileName, { type: mimeType });
+}
+
 function restoreForm(form, formData) {
     // Here for each element of the form we will replace the current value by the value present in our formData
     $(form).find("input").each(function () {
@@ -109,8 +135,11 @@ function restoreForm(form, formData) {
 
         switch ($(this).attr('type')) {
             case 'text':
-                //TODO
+                //Replace the value in the input by the URL to the stored file.
+                let url = formData.get(inputName);
+                $(this).val(url);
                 break;
+
             case 'file':
                 let newDate = new Date();
                 let filename = "selfStored-" + newDate.today() + "-at-" + newDate.timeNow() + ".png";
@@ -119,7 +148,6 @@ function restoreForm(form, formData) {
                         type: "img/png",
                     })
                 ];
-
                 this.files = new FileListItems(files);
                 break;
             default:
