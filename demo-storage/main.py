@@ -65,7 +65,6 @@ def upload_file():
         abort(Response("Empty filename", 400))
 
     filename = secure_filename(file.filename)
-
     return save_file_and_get_key(filename)
 
     return os.environ.get("BASE_URL")+"/"+str(key)

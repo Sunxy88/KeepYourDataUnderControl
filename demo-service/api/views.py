@@ -84,7 +84,7 @@ def posts_id(id_post):
 def posts_id_comments(id_post):
     # We could make it without this line, but this would assume that the post does exists
     post = Post.query.get_or_404(id_post)
-
+    print(request.json)
     if not request.json:
         abort(Response('Empty body', 400))
 

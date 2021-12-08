@@ -1,6 +1,7 @@
 import os
 import os.path
 from datetime import datetime
+import json
 
 from flask import (
     abort,
@@ -35,14 +36,16 @@ def upload_resource():
     file_path = os.path.join(UPLOAD_FOLDER, filename)
     file.save(file_path)
     extension = os.path.splitext(filename)[-1]
-    print(extension)
     if extension == '.txt':
-        with open(file_path, 'UTF-8') as file:
+        with open(file_path) as file:
             text = file.read()
+            print(text)
             res = save_text(text)
             if res != -1:
                 res = BASE_HOST + "/text/" + str(res)
-                return jsonify(res)
+                res = json.dumps({'url': res})
+                print(res)
+                return res
             else:
                 return ""
     if extension == '.jpg':
@@ -51,7 +54,7 @@ def upload_resource():
             res = save_image(img)
             if res != -1:
                 res = BASE_HOST + "/image/" + str(res)
-                return jsonify(res)
+                return json.dumps({'url': res})
             else:
                 return ""
     return ""
