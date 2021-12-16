@@ -117,7 +117,6 @@ def debug_delete_all():
 def debug_delete(key):
     files_collection = get_files_collection()
     filename = get_file_path(key)
-    console.log("FileName ",filename)
     if not filename:
         abort(404)
     files_collection.delete_one({"_id": ObjectId(key)})

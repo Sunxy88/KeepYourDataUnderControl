@@ -43,8 +43,7 @@ def upload_resource():
             res = save_text(text)
             if res != -1:
                 res = BASE_HOST + "/text/" + str(res)
-                res = json.dumps({'url': res})
-                print(res)
+                res = jsonify(url=res)
                 return res
             else:
                 return ""
@@ -54,7 +53,7 @@ def upload_resource():
             res = save_image(img)
             if res != -1:
                 res = BASE_HOST + "/image/" + str(res)
-                return json.dumps({'url': res})
+                return jsonify(url=res)
             else:
                 return ""
     return ""
